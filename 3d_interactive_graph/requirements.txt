@@ -3,7 +3,6 @@ mediapipe==0.10.21
 plotly==5.17.0
 dash==2.14.2
 dash-bootstrap-components==1.5.0
-SpeechRecognition==3.10.0
 sounddevice==0.5.2
 numpy==1.26.4
 pandas==2.2.3
