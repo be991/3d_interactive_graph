@@ -1,21 +1,30 @@
 # 3D Interactive Graph with Gesture and Voice Control
 
 ## Project Overview
-This project creates an interactive 3D network graph that responds to hand gestures and voice commands using MediaPipe for gesture recognition, SpeechRecognition for voice commands, and Plotly for 3D visualization.
+This project creates an interactive 3D network graph that responds to hand gestures and voice commands. The 3D graph is **overlaid directly on the camera feed**, allowing you to see your hands and the graph simultaneously for intuitive control, just like in AR/VR applications.
+
+## Key Features
+- **Camera Overlay Visualization**: 3D graph appears directly on your camera feed
+- **Hand Gesture Control**: Pinch-drag nodes, fist-rotate graph, two-hand zoom
+- **Voice Commands**: Switch modes and control graph with speech
+- **Real-time Interaction**: Smooth, responsive control with minimal latency
+- **Offline Speech Recognition**: Uses Vosk for privacy-friendly voice control
 
 ## Directory Structure
 ```
 3d_interactive_graph/
-├── main.py                 # Main application entry point
-├── requirements.txt        # Python dependencies
+├── main.py                      # Main application entry point
+├── requirements.txt             # Updated Python dependencies
+├── install_dependencies.bat     # Windows installation script
+├── setup_vosk.py               # Automatic Vosk model download
 ├── modules/
 │   ├── __init__.py
-│   ├── gesture_detector.py # Hand gesture recognition
-│   ├── voice_controller.py # Voice command recognition
-│   └── graph_visualizer.py # 3D graph visualization
+│   ├── gesture_detector.py     # Hand gesture recognition
+│   ├── voice_controller.py     # Voice command recognition (updated for Vosk)
+│   └── overlay_visualizer.py   # NEW: Camera overlay 3D visualization
 ├── data/
-│   └── sample_graph.json  # Sample graph data
-└── README.md              # This file
+│   └── sample_graph.json      # Sample graph data
+└── README.md                  # This file
 ```
 
 ## Installation Requirements
@@ -25,150 +34,159 @@ This project creates an interactive 3D network graph that responds to hand gestu
 - Python 3.8 or newer
 - VS Code
 - Webcam and microphone
-- Chrome browser (for Plotly visualization)
 
 ### Step 1: Install Python Dependencies
-Create a `requirements.txt` file and install packages:
+Your updated requirements.txt works perfectly:
 
 ```bash
-pip install opencv-python==4.8.1.78
-pip install mediapipe==0.10.21
-pip install plotly==5.17.0
-pip install dash==2.14.2
-pip install dash-bootstrap-components==1.5.0
-pip install SpeechRecognition==3.10.0
-pip install sounddevice==0.5.2
-pip install numpy==1.26.4
-pip install pandas==2.2.3
-pip install networkx==3.2.1
-pip install threading-timer==0.1.2
-pip install vosk==0.3.45
+pip install -r requirements.txt
 ```
 
-**Note for PyAudio**: If PyAudio installation fails, download the appropriate wheel from https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyaudio and install manually:
+Or run the batch script:
 ```bash
-pip install PyAudio-0.2.11-cp311-cp311-win_amd64.whl
+install_dependencies.bat
 ```
 
-## Module Breakdown
+### Step 2: Setup Vosk Speech Model
+Run the automatic setup:
+```bash
+python setup_vosk.py
+```
 
-### 1. Hand Gesture Detection Module (`gesture_detector.py`)
-- Uses MediaPipe to detect hand landmarks
-- Recognizes gestures: pinch, fist, two-hand zoom
-- Calculates gesture positions and movements
-- Handles gesture state transitions
+Or download manually:
+1. Download: https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+2. Extract to project directory
+3. Rename folder to: `vosk-model-small-en-us-0.15`
 
-### 2. Voice Command Module (`voice_controller.py`)
-- Uses SpeechRecognition with Windows Speech Recognition
-- Recognizes commands: "rotate mode", "drag mode", "zoom mode", "reset view"
-- Runs in separate thread to avoid blocking
-- Handles microphone permissions and errors
+## Updated Dependencies Explained
 
-### 3. 3D Graph Visualization Module (`graph_visualizer.py`)
-- Creates interactive 3D network graph using Plotly
-- Handles node positioning and edge rendering
-- Manages camera transformations (rotate, zoom, pan)
-- Updates visualization based on gesture/voice input
+### Changes Made:
+1. **MediaPipe**: Updated to 0.10.21 (latest stable)
+2. **Removed PyAudio/PocketSphinx**: These caused your installation errors
+3. **Added Vosk**: Better offline speech recognition
+4. **Added SoundDevice**: More reliable audio capture
+5. **Updated NumPy/Pandas**: Latest stable versions
 
-### 4. Main Application (`main.py`)
-- Coordinates all modules
-- Handles mode switching
-- Manages real-time updates
-- Provides user interface
+### Why These Changes:
+- **PyAudio issues**: Notoriously difficult to install on Windows
+- **PocketSphinx problems**: Deprecated distutils caused your error
+- **Vosk advantages**: Better accuracy, easier installation, fully offline
 
 ## Running the Application
 
 ### Step 1: Setup Project
-1. Create project directory: `3d_interactive_graph`
-2. Copy all code files to appropriate locations
-3. Open folder in VS Code
-
-### Step 2: Install Dependencies
-Open VS Code terminal (Ctrl+`) and run:
 ```bash
+mkdir 3d_interactive_graph
 cd 3d_interactive_graph
-pip install -r requirements.txt
+# Copy all files to appropriate locations
 ```
 
-### Step 3: Grant Permissions
-- Allow camera access when prompted
-- Allow microphone access when prompted
-- Ensure Chrome is set as default browser
+### Step 2: Install Dependencies
+```bash
+pip install -r requirements.txt
+python setup_vosk.py
+```
 
-### Step 4: Run Application
+### Step 3: Run Application
 ```bash
 python main.py
 ```
 
-### Step 5: Using the Application
-1. Application opens webcam window and browser
-2. Hold hand in front of camera for gesture control
-3. Speak voice commands clearly
-4. Browser shows 3D graph that responds to gestures
+### Step 4: Using the Camera Overlay Interface
+1. **Camera opens** showing your video feed
+2. **3D graph appears overlaid** on the camera view
+3. **Your hands are visible** along with the graph
+4. **Use gestures** to interact directly with the 3D visualization
+5. **Speak commands** to switch interaction modes
 
 ## Gesture Controls
-- **Pinch + Drag**: Move individual nodes (make pinch gesture with thumb/index finger)
-- **Fist + Move**: Rotate entire graph (make fist with hand)
-- **Two Hands Zoom**: Move hands apart/together to zoom in/out
+- **Pinch + Drag**: Make pinch gesture (thumb + index finger) and move to drag nodes
+- **Fist + Move**: Make fist and move hand to rotate entire graph
+- **Two Hands Zoom**: Move both hands apart/together to zoom in/out
 
 ## Voice Commands
-- "rotate mode" - Switch to rotation mode
-- "drag mode" - Switch to drag mode  
-- "zoom mode" - Switch to zoom mode
-- "reset view" - Reset camera to default position
+- **"rotate mode"** - Switch to rotation mode
+- **"drag mode"** - Switch to drag mode  
+- **"zoom mode"** - Switch to zoom mode
+- **"reset view"** - Reset camera to default position
 
-## Troubleshooting
+## Keyboard Controls
+- **'r'** - Reset graph view
+- **'q' or ESC** - Quit application
+
+## Updated Troubleshooting
+
+### Installation Issues (Fixed!)
+1. **PyAudio errors**: No longer needed - using SoundDevice
+2. **PocketSphinx distutils error**: Replaced with Vosk
+3. **Version conflicts**: All dependencies updated to compatible versions
 
 ### Common Issues and Solutions
 
-1. **Camera not working**:
-   - Check if other applications are using camera
-   - Restart application
+1. **Vosk model not found**:
+   ```bash
+   python setup_vosk.py
+   ```
+
+2. **Camera not working**:
    - Check Windows camera permissions
+   - Close other camera applications
+   - Try different camera index in main.py
 
-2. **Voice recognition not working**:
-   - Speak clearly and loudly
+3. **Voice recognition not working**:
    - Check microphone permissions
-   - Ensure Windows Speech Recognition is enabled
+   - Speak clearly and loudly
+   - Test with: `python -c "import sounddevice; print(sounddevice.query_devices())"`
 
-3. **Gesture detection lag**:
-   - Close other applications using camera
-   - Reduce lighting variations
+4. **Graph not visible**:
+   - Ensure good lighting
+   - Move closer/further from camera
+   - Press 'r' to reset view
+
+5. **Gesture detection issues**:
    - Keep hands clearly visible
+   - Use contrasting background
+   - Check MediaPipe version compatibility
 
-4. **Browser not opening**:
-   - Set Chrome as default browser
-   - Check if port 8050 is available
-   - Manually open http://localhost:8050
-
-5. **PyAudio installation errors**:
-   - Use precompiled wheel for Windows
-   - Install Microsoft Visual C++ Build Tools
-   - Try alternative: `pip install pipwin && pipwin install pyaudio`
-
-### Performance Optimization
-- Close unnecessary applications
-- Use good lighting for gesture detection
-- Keep microphone close for voice commands
-- Use dedicated graphics card if available
-
-## System Requirements
+## Performance Requirements
 - **CPU**: Intel i5 or AMD Ryzen 5 (minimum)
 - **RAM**: 8GB (minimum), 16GB (recommended)
-- **Camera**: Any USB webcam or built-in camera
-- **Microphone**: Any USB microphone or built-in microphone
-- **Browser**: Chrome/Chromium (recommended)
+- **Camera**: Any USB webcam or built-in camera (720p recommended)
+- **Microphone**: Any USB or built-in microphone
 
-## Known Limitations
-1. Voice recognition requires internet connection for best results
-2. Gesture detection works best in good lighting
-3. May have slight latency on older hardware
-4. Requires Chrome browser for optimal 3D visualization
+## What's New in This Version
+
+### Major Improvements:
+1. **Camera Overlay Interface**: 3D graph appears directly on camera feed (like your image!)
+2. **Better Speech Recognition**: Vosk provides more reliable offline recognition
+3. **Simplified Installation**: No more PyAudio/PocketSphinx headaches
+4. **Enhanced Visualization**: Better 3D projection and node interaction
+5. **Improved Performance**: More efficient rendering and gesture processing
+
+### Visual Experience:
+- See your hands and the 3D graph simultaneously
+- Real-time visual feedback for all interactions
+- Professional AR-like interface
+- Smooth animations and transitions
 
 ## Debug Mode
-Add `--debug` flag when running to enable verbose logging:
+Enable verbose logging:
 ```bash
 python main.py --debug
 ```
 
-This will show detailed information about gesture detection and voice recognition in the console.
+This shows detailed information about:
+- Gesture detection accuracy
+- Voice recognition results  
+- 3D graph transformations
+- Performance metrics
+
+## Code Architecture
+
+### Key Changes Made:
+1. **New OverlayGraphVisualizer**: Replaces browser-based visualization
+2. **Updated VoiceController**: Uses Vosk instead of SpeechRecognition/PocketSphinx  
+3. **Enhanced GestureDetector**: Works with newer MediaPipe version
+4. **Streamlined Main App**: Direct camera overlay, no separate browser window
+
+The updated code addresses all the dependency issues you encountered while providing a much better user experience with the camera overlay interface!

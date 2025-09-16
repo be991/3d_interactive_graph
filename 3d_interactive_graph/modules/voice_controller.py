@@ -150,40 +150,40 @@ class VoiceController:
         return list(self.commands.keys())
     
     def test_microphone(self) -> bool:
-        """Test if microphone is working"""
-        if not self.microphone:
+        """Test if microphone is working with Vosk"""
+        if not self.model:
             return False
             
         try:
-            with self.microphone as source:
-                print("🎤 Testing microphone... say something!")
-                audio = self.recognizer.listen(source, timeout=3, phrase_time_limit=2)
-                
-            # Try to recognize
-            text = self.recognizer.recognize_google(audio)
-            print(f"✅ Microphone test successful! Heard: '{text}'")
-            return True
+            print("🎤 Testing microphone... say something!")
+            duration = 3
+            audio_data = sd.rec(int(duration * self.sample_rate), 
+                              samplerate=self.sample_rate, 
+                              channels=1, 
+                              dtype='int16',
+                              device=self.device)
+            sd.wait()
+            
+            # Process with Vosk
+            audio_bytes = audio_data.tobytes()
+            if self.rec.AcceptWaveform(audio_bytes):
+                result = json.loads(self.rec.Result())
+                text = result.get('text', '')
+                if text:
+                    print(f"✅ Microphone test successful! Heard: '{text}'")
+                    return True
+                else:
+                    print("⚠️ Microphone working but no speech detected")
+                    return False
             
         except Exception as e:
             print(f"❌ Microphone test failed: {e}")
             return False
     
     def calibrate_microphone(self):
-        """Recalibrate microphone for current environment"""
-        if not self.microphone:
-            return False
-            
-        try:
-            print("🎤 Recalibrating microphone... please be quiet")
-            with self.microphone as source:
-                self.recognizer.adjust_for_ambient_noise(source, duration=3)
-            
-            print(f"✅ Calibration complete. Energy threshold: {self.recognizer.energy_threshold}")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Calibration failed: {e}")
-            return False
+        """Calibrate microphone (not needed for Vosk)"""
+        print("ℹ️ Vosk doesn't require calibration")
+        return True
     
     def stop(self):
         """Stop voice recognition"""

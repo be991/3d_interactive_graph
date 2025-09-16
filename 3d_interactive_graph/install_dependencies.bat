@@ -19,7 +19,7 @@ python -m pip install --upgrade pip
 echo.
 echo Installing OpenCV and MediaPipe...
 pip install opencv-python==4.8.1.78
-pip install mediapipe==0.10.7
+pip install mediapipe==0.10.21
 
 echo.
 echo Installing Plotly and Dash...
@@ -29,35 +29,39 @@ pip install dash-bootstrap-components==1.5.0
 
 echo.
 echo Installing Scientific Computing libraries...
-pip install numpy==1.24.3
-pip install pandas==1.5.3
+pip install numpy==1.26.4
+pip install pandas==2.2.3
 pip install networkx==3.2.1
 
 echo.
-echo Installing Speech Recognition...
+echo Installing Speech Recognition with Vosk...
 pip install SpeechRecognition==3.10.0
-pip install pocketsphinx==5.0.0
+pip install vosk==0.3.45
+pip install sounddevice==0.5.2
 
 echo.
-echo Installing PyAudio (this might take a while)...
-pip install pyaudio==0.2.11
-
-if errorlevel 1 (
-    echo.
-    echo PyAudio installation failed. Trying alternative method...
-    echo Please download the appropriate PyAudio wheel from:
-    echo https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyaudio
-    echo Then install manually with: pip install PyAudio-X.X.X-cpXX-cpXX-win_amd64.whl
-    echo.
-)
-
+echo Downloading Vosk speech model...
+echo Please download the small English model from:
+echo https://alphacephei.com/vosk/models
+echo Download: vosk-model-small-en-us-0.15.zip
+echo Extract it to the project directory and rename folder to: vosk-model-small-en-us-0.15
 echo.
+
 echo Installation complete!
+echo.
+echo IMPORTANT: Don't forget to download the Vosk model!
 echo.
 echo To run the application:
 echo   python main.py
 echo.
 echo For debug mode:
 echo   python main.py --debug
+echo.
+echo Controls:
+echo   - Pinch + drag: Move nodes
+echo   - Fist + move: Rotate graph
+echo   - Two hands: Zoom in/out
+echo   - Voice: "rotate mode", "drag mode", "zoom mode", "reset view"
+echo   - Press 'r' to reset view, 'q' to quit
 echo.
 pause
