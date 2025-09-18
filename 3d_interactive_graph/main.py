@@ -152,8 +152,9 @@ class InteractiveGraphApp:
                 # Flip frame horizontally for mirror effect
                 frame = cv2.flip(frame, 1)
 
-                # Process gestures on original frame
-                gesture_data = self.process_gestures(frame.copy())
+                # FIXED: Process gestures on the SAME frame that will be displayed
+                # This ensures hand landmarks are drawn on the frame we'll actually show
+                gesture_data = self.process_gestures(frame)  # ← No .copy()!
                 if gesture_data:
                     self.apply_gesture_to_graph(gesture_data)
 
@@ -165,7 +166,7 @@ class InteractiveGraphApp:
                     except queue.Empty:
                         break
 
-                # Draw 3D graph overlay on frame
+                # FIXED: Draw 3D graph overlay on the SAME frame with landmarks
                 frame_with_graph = self.graph_visualizer.draw_graph_on_frame(frame)
 
                 # Debug: Check if nodes are being positioned correctly
@@ -189,10 +190,10 @@ class InteractiveGraphApp:
                             2,
                         )
 
-                # Add UI overlays
+                # Add UI overlays (this goes on top of everything)
                 self._draw_ui_overlays(frame_with_graph, gesture_data)
 
-                # Show camera feed with 3D graph overlay
+                # Show camera feed with 3D graph overlay AND hand landmarks
                 cv2.imshow("3D Interactive Graph - Camera View", frame_with_graph)
 
                 # Handle keyboard input

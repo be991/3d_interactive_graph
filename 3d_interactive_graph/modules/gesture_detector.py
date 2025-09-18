@@ -27,6 +27,18 @@ class GestureDetector:
             min_tracking_confidence=0.5
         )
         
+        # FIXED: Proper drawing specifications for MediaPipe
+        self.landmark_drawing_spec = self.mp_draw.DrawingSpec(
+            color=(0, 0, 255),  # BGR: Red dots for landmarks
+            thickness=2, 
+            circle_radius=3
+        )
+        
+        self.connection_drawing_spec = self.mp_draw.DrawingSpec(
+            color=(0, 255, 0),  # BGR: Green lines for connections
+            thickness=2
+        )
+        
         # Gesture state tracking
         self.prev_positions = {}
         self.gesture_history = []
@@ -38,7 +50,7 @@ class GestureDetector:
         self.zoom_threshold = 0.1    # Movement threshold for zoom
         
         if debug:
-            print("👋 GestureDetector initialized")
+            print("👋 GestureDetector initialized with fixed landmark drawing")
     
     def calculate_distance(self, point1, point2):
         """Calculate Euclidean distance between two points"""
@@ -161,34 +173,37 @@ class GestureDetector:
             normalized.append((x, y))
         return normalized
     
-    def draw_landmarks_on_frame(self, frame, hand_landmarks):
-        """Draw hand landmarks on the frame for debugging"""
-        if self.debug:
-            self.mp_draw.draw_landmarks(frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
-    
     def detect_gestures(self, frame) -> Optional[Dict[str, Any]]:
-        """Main gesture detection method"""
+        """Main gesture detection method - FIXED VERSION"""
         if frame is None:
             return None
         
         height, width, _ = frame.shape
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Process frame with MediaPipe
+        # FIXED: Process with MediaPipe (RGB conversion)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.hands.process(rgb_frame)
         
         if not results.multi_hand_landmarks:
             return {'gesture_type': 'none'}
         
         num_hands = len(results.multi_hand_landmarks)
+        hands_drawn = 0
         
-        # ALWAYS draw landmarks on the original frame (not just in debug mode)
+        # FIXED: Always draw landmarks with proper specifications
         for hand_landmarks in results.multi_hand_landmarks:
+            # Draw landmarks and connections on the original BGR frame
             self.mp_draw.draw_landmarks(
-                frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS,
-                self.mp_draw.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2),
-                self.mp_draw.DrawingSpec(color=(0, 255, 0), thickness=2)
+                frame, 
+                hand_landmarks, 
+                self.mp_hands.HAND_CONNECTIONS,
+                landmark_drawing_spec=self.landmark_drawing_spec,
+                connection_drawing_spec=self.connection_drawing_spec
             )
+            hands_drawn += 1
+        
+        if self.debug:
+            print(f"🖐️ Drew landmarks for {hands_drawn} hands")
         
         # Single hand gestures
         if num_hands == 1:
@@ -200,11 +215,15 @@ class GestureDetector:
             # Try to detect pinch first (higher priority)
             pinch_gesture = self.detect_pinch(landmarks)
             if pinch_gesture:
+                if self.debug:
+                    print(f"📌 Pinch detected at {pinch_gesture['position']}")
                 return pinch_gesture
             
             # Try to detect fist
             fist_gesture = self.detect_fist(landmarks)
             if fist_gesture:
+                if self.debug:
+                    print(f"✊ Fist detected at {fist_gesture['position']}")
                 return fist_gesture
         
         # Two hand gestures
@@ -218,7 +237,9 @@ class GestureDetector:
             
             # Detect two-hand zoom
             zoom_gesture = self.detect_two_hand_zoom(left_landmarks, right_landmarks)
-            if zoom_gesture:
+            if zoom_gesture and abs(zoom_gesture['zoom_factor'] - 1.0) > 0.05:
+                if self.debug:
+                    print(f"🔍 Two-hand zoom: {zoom_gesture['zoom_factor']:.2f}")
                 return zoom_gesture
         
         return {'gesture_type': 'none'}
