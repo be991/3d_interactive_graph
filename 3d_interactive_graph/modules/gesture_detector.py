@@ -182,12 +182,17 @@ class GestureDetector:
         
         num_hands = len(results.multi_hand_landmarks)
         
+        # ALWAYS draw landmarks on the original frame (not just in debug mode)
+        for hand_landmarks in results.multi_hand_landmarks:
+            self.mp_draw.draw_landmarks(
+                frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS,
+                self.mp_draw.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2),
+                self.mp_draw.DrawingSpec(color=(0, 255, 0), thickness=2)
+            )
+        
         # Single hand gestures
         if num_hands == 1:
             hand_landmarks = results.multi_hand_landmarks[0]
-            
-            # Draw landmarks if debug mode
-            self.draw_landmarks_on_frame(frame, hand_landmarks)
             
             # Normalize landmarks
             landmarks = self.normalize_landmarks(hand_landmarks, width, height)
@@ -206,11 +211,6 @@ class GestureDetector:
         elif num_hands == 2:
             left_hand = results.multi_hand_landmarks[0]
             right_hand = results.multi_hand_landmarks[1]
-            
-            # Draw landmarks if debug mode
-            if self.debug:
-                self.draw_landmarks_on_frame(frame, left_hand)
-                self.draw_landmarks_on_frame(frame, right_hand)
             
             # Normalize landmarks
             left_landmarks = self.normalize_landmarks(left_hand, width, height)

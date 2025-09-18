@@ -1,25 +1,35 @@
 """
-voice_controller.py - Voice command recognition using SpeechRecognition
+voice_controller.py - Voice command recognition using Vosk
 Recognizes voice commands for mode switching and graph control
 """
 
-import speech_recognition as sr
+import json
+import os
+import sys
 import threading
 import time
 import queue
 from typing import Optional, List
-import sys
+
+try:
+    import vosk
+    import sounddevice as sd
+    import numpy as np
+except ImportError as e:
+    print(f"❌ Import error: {e}")
+    print("Please install required packages: pip install vosk sounddevice")
+    sys.exit(1)
 
 class VoiceController:
-    """Voice command controller using SpeechRecognition library"""
+    """Voice command controller using Vosk offline speech recognition"""
     
     def __init__(self, debug=False):
         self.debug = debug
         self.running = False
         
-        # Initialize speech recognition
-        self.recognizer = sr.Recognizer()
-        self.microphone = None
+        # Audio settings
+        self.sample_rate = 16000
+        self.device = None  # Use default device
         
         # Voice commands mapping
         self.commands = {
@@ -34,84 +44,89 @@ class VoiceController:
             'center view': 'reset_view'
         }
         
-        # Recognition settings
-        self.energy_threshold = 4000
-        self.dynamic_energy_threshold = True
-        self.timeout = 1.0
-        self.phrase_timeout = 0.3
-        
-        # Initialize microphone
-        self._initialize_microphone()
+        # Initialize Vosk
+        self.model = None
+        self.rec = None
+        self._initialize_vosk()
         
         if debug:
-            print("🎤 VoiceController initialized")
+            print("🎤 VoiceController initialized with Vosk")
     
-    def _initialize_microphone(self):
-        """Initialize microphone for speech recognition"""
+    def _initialize_vosk(self):
+        """Initialize Vosk speech recognition model"""
         try:
-            # Try to get default microphone
-            self.microphone = sr.Microphone()
+            # Find Vosk model directory
+            model_paths = [
+                "vosk-model-small-en-us-0.15",
+                os.path.join(".", "vosk-model-small-en-us-0.15"),
+                os.path.join(os.path.dirname(__file__), "..", "vosk-model-small-en-us-0.15")
+            ]
             
-            # Adjust for ambient noise
-            print("🎤 Adjusting microphone for ambient noise... (please be quiet)")
-            with self.microphone as source:
-                self.recognizer.adjust_for_ambient_noise(source, duration=2)
+            model_path = None
+            for path in model_paths:
+                if os.path.exists(path) and os.path.isdir(path):
+                    model_path = path
+                    break
             
-            # Set recognition parameters
-            self.recognizer.energy_threshold = self.energy_threshold
-            self.recognizer.dynamic_energy_threshold = self.dynamic_energy_threshold
+            if not model_path:
+                raise FileNotFoundError("Vosk model not found. Please run 'python setup_vosk.py'")
             
-            print("✅ Microphone initialized successfully")
+            # Set Vosk log level (0 = silent, 1 = errors only)
+            vosk.SetLogLevel(0 if not self.debug else 1)
+            
+            # Initialize model and recognizer
+            self.model = vosk.Model(model_path)
+            self.rec = vosk.KaldiRecognizer(self.model, self.sample_rate)
+            
+            print("✅ Vosk model initialized successfully")
             if self.debug:
-                print(f"   Energy threshold: {self.recognizer.energy_threshold}")
+                print(f"   Model path: {model_path}")
+                print(f"   Sample rate: {self.sample_rate}")
             
         except Exception as e:
-            print(f"❌ Failed to initialize microphone: {e}")
-            print("   Make sure microphone is connected and accessible")
-            self.microphone = None
+            print(f"❌ Failed to initialize Vosk: {e}")
+            print("   Make sure Vosk model is downloaded. Run 'python setup_vosk.py'")
+            self.model = None
+            self.rec = None
     
     def listen_for_command(self) -> Optional[str]:
-        """Listen for a single voice command"""
-        if not self.microphone:
+        """Listen for a single voice command using Vosk"""
+        if not self.model or not self.rec:
             return None
             
         try:
-            # Listen for audio
-            with self.microphone as source:
-                if self.debug:
-                    print("🎧 Listening for command...")
-                
-                # Listen with timeout
-                audio = self.recognizer.listen(
-                    source, 
-                    timeout=self.timeout, 
-                    phrase_time_limit=self.phrase_timeout
-                )
-                
-            # Recognize speech
-            try:
-                # Try Windows Speech Recognition first (offline)
-                text = self.recognizer.recognize_sphinx(audio)
-                if self.debug:
-                    print(f"🗣️ Sphinx recognized: '{text}'")
-            except (sr.UnknownValueError, sr.RequestError):
-                try:
-                    # Fallback to Google Speech Recognition (online)
-                    text = self.recognizer.recognize_google(audio, language='en-US')
-                    if self.debug:
-                        print(f"🗣️ Google recognized: '{text}'")
-                except (sr.UnknownValueError, sr.RequestError) as e:
-                    if self.debug:
-                        print(f"❌ Speech recognition error: {e}")
-                    return None
+            if self.debug:
+                print("🎧 Listening for command...")
+            
+            # Record audio for 2 seconds
+            duration = 2
+            audio_data = sd.rec(
+                int(duration * self.sample_rate), 
+                samplerate=self.sample_rate, 
+                channels=1, 
+                dtype='int16',
+                device=self.device
+            )
+            sd.wait()  # Wait for recording to complete
+            
+            # Convert to bytes for Vosk
+            audio_bytes = audio_data.tobytes()
+            
+            # Process with Vosk
+            if self.rec.AcceptWaveform(audio_bytes):
+                result = json.loads(self.rec.Result())
+            else:
+                result = json.loads(self.rec.PartialResult())
+            
+            text = result.get('text', '').strip()
+            
+            if text and self.debug:
+                print(f"🗣️ Recognized: '{text}'")
             
             # Process recognized text
             if text:
-                return self._process_command(text.lower().strip())
+                return self._process_command(text.lower())
                 
-        except sr.WaitTimeoutError:
-            # Normal timeout - no speech detected
-            return None
         except Exception as e:
             if self.debug:
                 print(f"❌ Voice listening error: {e}")

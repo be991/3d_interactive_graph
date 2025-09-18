@@ -2,8 +2,7 @@
 modules package - Contains gesture detection, voice control, and visualization modules
 """
 
-from .gesture_detector import GestureDetector
-from .voice_controller import VoiceController
-from .graph_visualizer import GraphVisualizer
+# Remove the imports from __init__.py to avoid circular import issues
+# The main.py file will import directly from each module
 
-__all__ = ['GestureDetector', 'VoiceController', 'GraphVisualizer']
+__all__ = ['GestureDetector', 'VoiceController', 'OverlayGraphVisualizer']
